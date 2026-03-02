@@ -1,0 +1,45 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: ✅ تحميل الكود
+      uses: actions/checkout@v4
+
+    - name: 🔧 اختيار Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+
+    - name: 🏗️ بناء التطبيق (بدون توقيع)
+      run: |
+        xcodebuild \
+          -project CalculatorApp.xcodeproj \
+          -scheme CalculatorApp \
+          -configuration Release \
+          -sdk iphoneos \
+          CODE_SIGNING_ALLOWED=NO \
+          ONLY_ACTIVE_ARCH=NO \
+          -derivedDataPath ./build \
+          clean build
+
+    - name: 📦 تحويل إلى IPA
+      run: |
+        mkdir -p Payload
+        cp -r build/Build/Products/Release-iphoneos/CalculatorApp.app Payload/
+        zip -r CalculatorApp.ipa Payload
+        echo "✅ تم إنشاء IPA بنجاح!"
+
+    - name: 💾 رفع IPA كـ Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CalculatorApp-IPA
+        path: CalculatorApp.ipa
+        retention-days: 30
